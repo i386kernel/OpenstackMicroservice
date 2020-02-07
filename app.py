@@ -6,6 +6,7 @@ app = Flask(__name__)
 api = Api(app)
 
 class OpenstackAuthenticator(Resource):
+
     conn = connection.Connection(
                         auth_url="http://192.168.8.250:5000/v3", 
                         project_name="admin",
@@ -21,13 +22,14 @@ class OpenstackDiscoverCluster(Resource):
 
         '''
 
-        Queries with OpenStack cluster and return cluster information
-        Args:
-            None
-        Raises:
-            Connection Error if Unable to connect to OpenStack cluster
-        :return:
-            Json object with OpenStack cluster information - return code 200
+            Queries with OpenStack cluster and return cluster information
+
+            :arg
+                None
+            :raises
+                    Connection error, authentication error
+            :return
+                    Json object with OpenStack cluster information - return code 200
 
         '''
 
@@ -36,10 +38,10 @@ class OpenstackDiscoverCluster(Resource):
         images = [image.name for image in OpenstackAuthenticator.conn.image.images()]
         flavors = [flavor.name for flavor in OpenstackAuthenticator.conn.compute.flavors()]
 
-        openstackcluster =  {"Openstack Cluster": [{"Servers": servers, "Number of Servers": len(servers)},
-                                      {"Networks": networks, "Number of Networks": len(networks)},
-                                      {"Images": images,"Number of Images": len(images)},
-                                      {"Flavors": flavors, "Number of Flavors": len(flavors)}]}
+        openstackcluster = {"Openstack Cluster": [{"Servers": servers, "Number of Servers": len(servers)},
+                                                  {"Networks": networks, "Number of Networks": len(networks)},
+                                                  {"Images": images,"Number of Images": len(images)},
+                                                  {"Flavors": flavors, "Number of Flavors": len(flavors)}]}
 
         return openstackcluster, 200 if openstackcluster else 404
 
@@ -49,15 +51,15 @@ class OpenstackServers(Resource):
     def get(self):
 
         '''
-        
-        Queries OpenStack cluster for servers and return servers.
 
-        :arg:
-            None
-        :raises
-            Connection error, Authentication error
-        :returns:
-            Json object with Server information
+            Queries OpenStack cluster for servers and return servers.
+
+            :arg
+                None
+            :raises
+                   Connection error, Authentication error
+            :returns
+                    Json object with Server information
 
         '''
 
@@ -73,36 +75,53 @@ class OpenstackServers(Resource):
                     "Network": server.addresses,
                 }
             )
-        return {"servers": serverslist}
+        return {"servers": serverslist}, 200 if serverslist else 404
 
 class OpenstackNetworks(Resource):
 
     def get(self):
         '''
 
-        Gets Network informaiton from Openstack Cluster
+            Gets Network information from OpenStack Cluster
 
-        :arg
-            None
-
-        :return:
-
-
+            :arg
+                None
+            :raises
+                   CInternal Server Error(500), Authentication error
+            :returns
+                    Json Object with Network information.
+        
         '''
+
         networks = OpenstackAuthenticator.conn.network.networks()
-        netlist = []
+        networklist = []
         for network in networks:
-            netlist.append(
+            networklist.append(
                 {
                     "Network Name": network.name,
                     "Status": network.status,
                     "MTU": network.mtu,
                 }
             )
-        return {"networks": [network for network in networks]}
+        return {"networks": networklist}, 200 if networklist else 404
 
 class OpenstackFlavors(Resource):
+
     def get(self):
+
+        '''
+
+          Gets Flavor information from OpenStack Cluster
+
+          :arg
+              None
+          :raises
+                 Authentication error, Internal Server Error(500)
+          :returns
+                  Json Object with Flavor information.
+
+        '''
+
         flavors = OpenstackAuthenticator.conn.compute.flavors()
         flavorslist = []
         for flavor in flavors:
@@ -115,13 +134,37 @@ class OpenstackFlavors(Resource):
                             "Disk Size": f"{flavor.disk} GB"
                         }
                     )
-        return {"Flavours": flavorslist}
+        return {"Flavours": flavorslist}, 200 if flavorslist else 404
 
 class OpenstackImages(Resource):
+
     def get(self):
-        imagelist = []
+
+        '''
+
+          Gets Images information from OpenStack Cluster
+
+          :arg
+              None
+          :raises
+                 Internal Server Error(500), Authentication error
+          :returns
+                  Json Object with Network information.
+
+        '''
+
         images = OpenstackAuthenticator.conn.image.images()
-        return {"Images": [image for image in images]}
+        imagelist = []
+        for image in images:
+            imagelist.append(
+                {
+                    "Image Name": image.name,
+                    "Disk Format": image.disk_format,
+                    "Size": image.size,
+                }
+            )
+
+        return {"Images": imagelist}, 200 if images else 404
 
 class OpenstackCreateServer(Resource):
     def post(self, name):
