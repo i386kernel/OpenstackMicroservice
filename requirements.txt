@@ -1,0 +1,3 @@
+openstacksdk
+flask
+flask_restful
